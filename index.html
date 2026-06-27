@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>💕 Occasion Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d1117;color:#e6edf3;font-family:Inter,-apple-system,sans-serif;min-height:100vh;font-size:16px}
+
+.nav{background:#161b22;border-bottom:1px solid #21262d;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:100;padding:0 12px}
+.nav::-webkit-scrollbar{display:none}
+.nav-brand{font-size:15px;font-weight:700;padding:13px 12px 13px 0;border-right:1px solid #21262d;margin-right:6px;white-space:nowrap;flex-shrink:0}
+.nav-tab{padding:13px 12px;font-size:13px;font-weight:600;color:#2dd4bf;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;flex-shrink:0}
+.nav-tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
+
+.page{display:none;padding:16px 14px;max-width:860px;margin:0 auto}
+.page.active{display:block}
+
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#58a6ff;border-bottom:1px solid #21262d;padding-bottom:8px;margin-bottom:12px}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.flabel{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#2dd4bf;margin-bottom:5px}
+input,select,textarea{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-family:inherit;font-size:15px;padding:9px 12px;outline:none}
+input:focus,select:focus{border-color:#58a6ff}
+select option{background:#161b22}
+
+.btn-save{width:100%;padding:12px;background:#238636;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn-delete{width:100%;padding:10px;background:transparent;border:1px solid #f85149;color:#f85149;border-radius:7px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
+
+.mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.metric{background:#1c2128;border:1px solid #21262d;border-radius:8px;padding:12px 14px}
+.mlabel{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#2dd4bf;margin-bottom:4px}
+.mval{font-size:22px;font-weight:700;font-family:monospace}
+.msub{font-size:11px;color:#2dd4bf;margin-top:2px}
+
+.entry{background:#1c2128;border:1px solid #21262d;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.e-left{flex:1;min-width:0}
+.e-occ{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#2dd4bf;margin-bottom:2px}
+.e-item{font-size:17px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-meta{font-size:14px;color:#2dd4bf;margin-top:3px}
+
+.verdict{border-radius:10px;padding:14px 16px;text-align:center;margin-bottom:14px;font-size:15px;font-weight:700}
+.verdict-larry{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);color:#58a6ff}
+.verdict-liz{background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);color:#bc8cff}
+.verdict-even{background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.3);color:#2dd4bf}
+
+.split-bar{height:7px;border-radius:3px;background:#21262d;overflow:hidden;display:flex;margin:8px 0}
+
+.chip{padding:5px 12px;border:1px solid #30363d;border-radius:20px;font-size:12px;font-weight:600;color:#2dd4bf;cursor:pointer;white-space:nowrap;background:transparent;display:inline-block;margin-right:6px;margin-bottom:6px}
+.chip.active{background:rgba(88,166,255,.12);border-color:#58a6ff;color:#58a6ff}
+
+.see-more{font-size:13px;color:#58a6ff;cursor:pointer;padding:6px 0;display:inline-block}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#238636;color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+
+/* EDIT MODAL */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:200;overflow-y:auto}
+.modal-inner{background:#161b22;border:1px solid #21262d;border-radius:10px;margin:20px 14px;padding:16px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-title{font-size:16px;font-weight:700;color:#58a6ff}
+.modal-close{font-size:22px;cursor:pointer;color:#2dd4bf}
+
+.ledger-table{width:100%;border-collapse:collapse;font-size:13px}
+.ledger-table th{background:#161b22;color:#2dd4bf;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:10px 8px;text-align:left;border-bottom:2px solid #21262d;white-space:nowrap}
+.ledger-table td{padding:10px 8px;border-bottom:1px solid #21262d;vertical-align:top;color:#e6edf3}
+.ledger-table tr:last-child td{border-bottom:none}
+.ledger-table tr:hover td{background:#1c2128}
+.ledger-total{background:#161b22;border-top:2px solid #2dd4bf}
+.ledger-total td{font-weight:700;color:#2dd4bf;padding:12px 8px}
+.running-ahead{font-size:12px;font-weight:700}
+@media(max-width:500px){
+  .ledger-table{font-size:12px}
+  .ledger-table th,.ledger-table td{padding:8px 5px}
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-brand">💕 Occasion Tracker</div>
+  <div class="nav-tab active" onclick="showPage('add',this)">➕ Add</div>
+  <div class="nav-tab" onclick="showPage('summary',this)">📊 Summary</div>
+  <div class="nav-tab" onclick="showPage('entries',this)">📋 Entries</div>
+  <div class="nav-tab" onclick="showPage('occasion',this)">🎁 By Occasion</div>
+  <div class="nav-tab" onclick="showPage('ledger',this)">📒 Ledger</div>
+</div>
+<div style="background:#161b22;border-bottom:1px solid #21262d;padding:8px 16px;display:flex;gap:20px;align-items:center">
+  <span style="font-size:13px;font-weight:600;color:#2dd4bf">Legend:</span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#58a6ff;display:inline-block"></span>
+    <span style="color:#58a6ff;font-weight:600">Larry</span>
+  </span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#bc8cff;display:inline-block"></span>
+    <span style="color:#bc8cff;font-weight:600">Liz</span>
+  </span>
+</div>
+
+<div id="toast"></div>
+
+<!-- ══ ADD PAGE ══ -->
+<div class="page active" id="page-add">
+  <div class="card">
+    <div class="card-title">New Entry</div>
+
+    <div style="margin-bottom:12px">
+      <label class="flabel">Date</label>
+      <input type="date" id="f-date">
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="flabel">Occasion</label>
+      <select id="f-occasion">
+          <option value="">Select…</option>
+          <option>Food</option>
+          <option>Drinks</option>
+          <option>Movies</option>
+          <option>Special Event</option>
+          <option>Travel</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="custom-occ-wrap" style="display:none;margin-bottom:12px">
+      <label class="flabel">Custom Occasion</label>
+      <input type="text" id="f-custom" placeholder="e.g. Engagement party">
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label class="flabel">📍 Location</label>
+      <input type="text" id="f-location" placeholder="e.g. Nobu, Miami">
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label class="flabel">Item Purchased</label>
+      <input type="text" id="f-item" placeholder="e.g. Dinner at Carmine's">
+    </div>
+
+    <div class="g2" style="margin-bottom:12px">
+      <div>
+        <label class="flabel">Blue Paid ($)</label>
+        <input type="number" id="f-larry-paid" placeholder="0.00" min="0" step="0.01" oninput="updatePreview()">
+      </div>
+      <div>
+        <label class="flabel">Purple Paid ($)</label>
+        <input type="number" id="f-liz-paid" placeholder="0.00" min="0" step="0.01" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <div id="total-display" style="display:none;background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:13px;color:#2dd4bf;margin-bottom:12px">
+      Total: <strong id="total-amt" style="color:#e6edf3"></strong>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label class="flabel">Agreed Split</label>
+      <div class="g2" style="align-items:center">
+        <div>
+          <div style="font-size:11px;color:#58a6ff;font-weight:700;margin-bottom:4px">Blue %</div>
+          <input type="number" id="f-larry-pct" value="50" min="0" max="100" oninput="updatePreview()">
+        </div>
+        <div>
+          <div style="font-size:11px;color:#bc8cff;font-weight:700;margin-bottom:4px">Purple %</div>
+          <div style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:9px 12px;font-size:16px;text-align:center;color:#bc8cff;font-weight:700;font-family:monospace" id="liz-pct-display">50%</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="split-preview" style="display:none;background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:13px;color:#2dd4bf;margin-bottom:12px"></div>
+
+    <div style="margin-bottom:12px">
+      <label class="flabel">Notes (optional)</label>
+      <input type="text" id="f-notes" placeholder="Any detail…">
+    </div>
+
+    <button class="btn-save" onclick="saveEntry()">💾 Save Entry</button>
+  </div>
+</div>
+
+<!-- ══ SUMMARY PAGE ══ -->
+<div class="page" id="page-summary">
+  <div id="year-chips-summary" style="margin-bottom:12px"></div>
+  <div id="summary-content"></div>
+</div>
+
+<!-- ══ ENTRIES PAGE ══ -->
+<div class="page" id="page-entries">
+  <div id="year-chips-entries" style="margin-bottom:12px"></div>
+  <div id="entries-content"></div>
+</div>
+
+<!-- ══ BY OCCASION PAGE ══ -->
+<div class="page" id="page-occasion">
+  <div id="year-chips-occasion" style="margin-bottom:12px"></div>
+  <div id="occasion-content"></div>
+</div>
+
+<!-- ══ LEDGER PAGE ══ -->
+<div class="page" id="page-ledger">
+  <div id="year-chips-ledger" style="margin-bottom:12px"></div>
+  <div id="ledger-content"></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal" id="edit-modal">
+  <div class="modal-inner">
+    <div class="modal-header">
+      <div class="modal-title">Edit Entry</div>
+      <div class="modal-close" onclick="closeEdit()">✕</div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label class="flabel">Date</label><input type="date" id="e-date"></div>
+      <div><label class="flabel">Occasion</label><input type="text" id="e-occasion"></div>
+    </div>
+    <div style="margin-bottom:10px"><label class="flabel">Item</label><input type="text" id="e-item"></div>
+    <div style="margin-bottom:10px"><label class="flabel">Location</label><input type="text" id="e-location" placeholder="Vacation location"></div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label class="flabel">Blue Paid ($)</label><input type="number" id="e-larry-paid" min="0" step="0.01"></div>
+      <div><label class="flabel">Purple Paid ($)</label><input type="number" id="e-liz-paid" min="0" step="0.01"></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label class="flabel">Blue % Split</label><input type="number" id="e-larry-pct" min="0" max="100"></div>
+      <div><label class="flabel">Notes</label><input type="text" id="e-notes"></div>
+    </div>
+    <button class="btn-save" onclick="saveEdit()">💾 Save Changes</button>
+    <button class="btn-delete" onclick="deleteEntry()">🗑 Delete Entry</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+let entries=[];
+try{entries=JSON.parse(localStorage.getItem("occasion_v1")||"[]");}catch{}
+let activeYear="All";
+let editingId=null;
+
+const LARRY="#58a6ff",LIZ="#bc8cff",GREEN="#2dd4bf",RED="#f85149",ORANGE="#f0883e";
+
+function save(){localStorage.setItem("occasion_v1",JSON.stringify(entries));}
+function fmt(n){return"$"+Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+function today(){return new Date().getFullYear();}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(function init(){
+  document.getElementById("f-date").value=new Date().toISOString().split("T")[0];
+  document.getElementById("f-occasion").addEventListener("change",function(){
+    document.getElementById("custom-occ-wrap").style.display=this.value==="Other"?"block":"none";
+  });
+})();
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+function updatePreview(){
+  const lp=parseFloat(document.getElementById("f-larry-paid").value)||0;
+  const lz=parseFloat(document.getElementById("f-liz-paid").value)||0;
+  const total=lp+lz;
+  const pct=Math.min(100,Math.max(0,parseInt(document.getElementById("f-larry-pct").value)||50));
+  document.getElementById("liz-pct-display").textContent=(100-pct)+"%";
+
+  if(total>0){
+    document.getElementById("total-display").style.display="block";
+    document.getElementById("total-amt").textContent=fmt(total);
+    const shouldPay=total*(pct/100);
+    const net=lp-shouldPay;
+    const prev=document.getElementById("split-preview");
+    prev.style.display="block";
+    prev.innerHTML=`Total ${fmt(total)} · Blue's share: ${fmt(shouldPay)} · <strong style="color:${net>=0?GREEN:RED}">${net>=0?"Blue is "+fmt(net)+" ahead":"Purple is "+fmt(Math.abs(net))+" ahead"}</strong>`;
+  }else{
+    document.getElementById("total-display").style.display="none";
+    document.getElementById("split-preview").style.display="none";
+  }
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+function saveEntry(){
+  const occasion=document.getElementById("f-occasion").value;
+  const custom=document.getElementById("f-custom").value.trim();
+  const item=document.getElementById("f-item").value.trim();
+  const lp=parseFloat(document.getElementById("f-larry-paid").value)||0;
+  const lz=parseFloat(document.getElementById("f-liz-paid").value)||0;
+  const total=lp+lz;
+
+  if(!occasion){showToast("Select an occasion");return;}
+  if(!item){showToast("Enter an item");return;}
+  if(total<=0){showToast("Enter at least one payment");return;}
+
+  const pct=Math.min(100,Math.max(0,parseInt(document.getElementById("f-larry-pct").value)||50));
+  const larryShouldPay=total*(pct/100);
+  const larryNet=lp-larryShouldPay;
+  const occ=occasion==="Other"&&custom?custom:occasion;
+
+  entries.push({
+    id:Date.now(),
+    date:document.getElementById("f-date").value,
+    year:new Date(document.getElementById("f-date").value).getFullYear(),
+    occasion:occ,
+    item,
+    location:document.getElementById("f-location").value.trim(),
+    notes:document.getElementById("f-notes").value.trim(),
+    larryPaid:lp,lizPaid:lz,amount:total,
+    larryPct:pct,larryNet
+  });
+  save();
+  showToast("✓ Entry saved");
+
+  // Reset
+  document.getElementById("f-date").value=new Date().toISOString().split("T")[0];
+  document.getElementById("f-occasion").value="";
+  document.getElementById("f-custom").value="";
+  document.getElementById("f-item").value="";
+  document.getElementById("f-larry-paid").value="";
+  document.getElementById("f-liz-paid").value="";
+  document.getElementById("f-larry-pct").value="50";
+  document.getElementById("f-location").value="";
+  document.getElementById("f-notes").value="";
+  document.getElementById("liz-pct-display").textContent="50%";
+  document.getElementById("total-display").style.display="none";
+  document.getElementById("split-preview").style.display="none";
+  document.getElementById("custom-occ-wrap").style.display="none";
+}
+
+// ── YEAR FILTER ───────────────────────────────────────────────────────────────
+function getYears(){return["All",...[...new Set(entries.map(e=>e.year))].sort((a,b)=>b-a)];}
+
+function renderChips(containerId){
+  const el=document.getElementById(containerId);
+  el.innerHTML=getYears().map(y=>`<span class="chip${activeYear==y?" active":""}" onclick="setYear(${y==="All"?"'All'":y},'${containerId}')">${y}</span>`).join("");
+}
+
+function setYear(y,src){
+  activeYear=y;
+  renderAll();
+}
+
+function filtered(){
+  return activeYear==="All"?entries:entries.filter(e=>e.year==activeYear);
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────────────────
+function renderSummary(){
+  renderChips("year-chips-summary");
+  const fe=filtered();
+  const el=document.getElementById("summary-content");
+
+  if(!fe.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:#2dd4bf"><div style="font-size:36px;margin-bottom:10px">🎁</div>No entries yet.</div>`;return;}
+
+  const larryTotal=fe.reduce((s,e)=>s+(e.larryPaid||0),0);
+  const lizTotal=fe.reduce((s,e)=>s+(e.lizPaid||0),0);
+  const total=larryTotal+lizTotal;
+  const netPosition=fe.reduce((s,e)=>s+(e.larryNet||0),0);
+  const diff=Math.abs(netPosition);
+  const larryPctBar=total>0?(larryTotal/total*100):50;
+
+  // Verdict
+  let verdictHTML="";
+  if(diff<0.01){
+    verdictHTML=`<div class="verdict verdict-even">✓ Perfectly even — all splits balanced</div>`;
+  }else if(netPosition>0){
+    verdictHTML=`<div class="verdict verdict-larry">Larry is ${fmt(diff)} ahead vs agreed splits</div>`;
+  }else{
+    verdictHTML=`<div class="verdict verdict-liz">Liz is ${fmt(diff)} ahead vs agreed splits</div>`;
+  }
+
+  // Per occasion
+  const occasions=[...new Set(fe.map(e=>e.occasion))];
+  const occHTML=occasions.map(occ=>{
+    const items=fe.filter(e=>e.occasion===occ);
+    const oTotal=items.reduce((s,e)=>s+e.amount,0);
+    const oLarry=items.reduce((s,e)=>s+(e.larryPaid||0),0);
+    const oLiz=items.reduce((s,e)=>s+(e.lizPaid||0),0);
+    const oNet=items.reduce((s,e)=>s+(e.larryNet||0),0);
+    return`<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <span style="font-size:14px;font-weight:700">🎁 ${occ}</span>
+        <span style="font-size:14px;font-weight:700;font-family:monospace;color:${ORANGE}">${fmt(oTotal)}</span>
+      </div>
+      <div style="font-size:12px;color:#2dd4bf">
+        <span style="color:${LARRY}">${fmt(oLarry)}</span> · <span style="color:${LIZ}">${fmt(oLiz)}</span>
+        · Net: <span style="color:${oNet>=0?GREEN:RED}">${oNet>=0?"+":"-"}${fmt(Math.abs(oNet))}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML=`
+    ${verdictHTML}
+    <div class="mrow">
+      <div class="metric"><div class="mlabel">Larry Paid</div><div class="mval" style="color:${LARRY}">${fmt(larryTotal)}</div><div class="msub">${fe.filter(e=>(e.larryPaid||0)>0).length} items</div></div>
+      <div class="metric"><div class="mlabel">Liz Paid</div><div class="mval" style="color:${LIZ}">${fmt(lizTotal)}</div><div class="msub">${fe.filter(e=>(e.lizPaid||0)>0).length} items</div></div>
+      <div class="metric" style="border-color:${diff<0.01?GREEN:netPosition>0?LARRY:LIZ}">
+        <div class="mlabel">${diff<0.01?"Status":netPosition>0?"Larry":"Liz"}</div>
+        <div class="mval" style="color:${diff<0.01?GREEN:netPosition>0?LARRY:LIZ}">${diff<0.01?"Even":fmt(diff)}</div>
+        <div class="msub">${diff<0.01?"Balanced":"ahead vs splits"}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Split Analysis</div>
+      ${(()=>{
+        // Weighted agreed split
+        const weightedLarryAgreed=total>0?fe.reduce((s,e)=>s+(e.amount||0)*(e.larryPct||50)/100,0)/total*100:50;
+        const weightedLizAgreed=100-weightedLarryAgreed;
+        // Actual split
+        const actualLarryPct=total>0?(larryTotal/total*100):50;
+        const actualLizPct=100-actualLarryPct;
+        // Relative difference: (actual - agreed) / agreed * 100
+        const larryRelDiff=weightedLarryAgreed>0?((actualLarryPct-weightedLarryAgreed)/weightedLarryAgreed*100):0;
+        const lizRelDiff=weightedLizAgreed>0?((actualLizPct-weightedLizAgreed)/weightedLizAgreed*100):0;
+        const larryRelStr=(larryRelDiff>=0?"+":"")+larryRelDiff.toFixed(1)+"% vs agreed";
+        const lizRelStr=(lizRelDiff>=0?"+":"")+lizRelDiff.toFixed(1)+"% vs agreed";
+        return`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${LARRY};padding:8px 10px;border-bottom:1px solid #21262d">Larry</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${LIZ};padding:8px 10px;border-bottom:1px solid #21262d;border-left:1px solid #21262d">Liz</div>
+
+          <div style="padding:8px 10px;border-bottom:1px solid #21262d">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Agreed split</div>
+            <div style="font-size:16px;font-weight:700;font-family:monospace;color:${LARRY}">${weightedLarryAgreed.toFixed(1)}%</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(total*weightedLarryAgreed/100)}</div>
+          </div>
+          <div style="padding:8px 10px;border-bottom:1px solid #21262d;border-left:1px solid #21262d">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Agreed split</div>
+            <div style="font-size:16px;font-weight:700;font-family:monospace;color:${LIZ}">${weightedLizAgreed.toFixed(1)}%</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(total*weightedLizAgreed/100)}</div>
+          </div>
+
+          <div style="padding:8px 10px;border-bottom:1px solid #21262d">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Actually paid</div>
+            <div style="font-size:16px;font-weight:700;font-family:monospace;color:${LARRY}">${actualLarryPct.toFixed(1)}%</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(larryTotal)}</div>
+          </div>
+          <div style="padding:8px 10px;border-bottom:1px solid #21262d;border-left:1px solid #21262d">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Actually paid</div>
+            <div style="font-size:16px;font-weight:700;font-family:monospace;color:${LIZ}">${actualLizPct.toFixed(1)}%</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(lizTotal)}</div>
+          </div>
+
+          <div style="padding:8px 10px">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Relative diff</div>
+            <div style="font-size:15px;font-weight:700;color:#58a6ff">${larryRelStr}</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(Math.abs(netPosition))} ${netPosition>=0?"over":"under"}</div>
+          </div>
+          <div style="padding:8px 10px;border-left:1px solid #21262d">
+            <div style="font-size:10px;color:#2dd4bf;margin-bottom:2px">Relative diff</div>
+            <div style="font-size:15px;font-weight:700;color:#58a6ff">${lizRelStr}</div>
+            <div style="font-size:11px;color:#2dd4bf">${fmt(Math.abs(netPosition))} ${lizRelDiff>=0?"over":"under"}</div>
+          </div>
+        </div>`;
+      })()}
+    </div>
+    <div class="card"><div class="card-title">Per Occasion</div>${occHTML}</div>
+  `;
+}
+
+// ── ENTRIES ───────────────────────────────────────────────────────────────────
+function renderEntries(){
+  renderChips("year-chips-entries");
+  const fe=[...filtered()].reverse();
+  const el=document.getElementById("entries-content");
+  if(!fe.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:#2dd4bf"><div style="font-size:36px;margin-bottom:10px">🎁</div>No entries yet.</div>`;return;}
+  el.innerHTML=fe.map(e=>`
+    <div class="entry">
+      <div class="e-left">
+        <div class="e-occ">${e.occasion} · ${e.date||e.year}</div>
+        <div class="e-item">${e.item}${e.location?" 📍 "+e.location:""}</div>
+        <div class="e-meta">
+          <span style="color:${LARRY}">${fmt(e.larryPaid||0)}</span> /
+          <span style="color:${LIZ}">${fmt(e.lizPaid||0)}</span> ·
+          <span style="color:${LARRY}">${e.larryPct??50}%</span>/<span style="color:${LIZ}">${100-(e.larryPct??50)}%</span> ·
+          <span style="color:${(e.larryNet||0)>=0?GREEN:RED}">${(e.larryNet||0)>=0?"+":"-"}${fmt(Math.abs(e.larryNet||0))}</span>
+          ${e.notes?` · <span style="color:#2dd4bf">${e.notes}</span>`:""}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:16px;font-weight:700;font-family:monospace;color:${ORANGE}">${fmt(e.amount)}</div>
+        <div style="font-size:10px;color:#2dd4bf;margin-top:2px">total</div>
+        <button onclick="openEdit(${e.id})" style="margin-top:6px;padding:4px 10px;background:#1c2128;border:1px solid #30363d;color:${LARRY};border-radius:5px;font-size:12px;cursor:pointer;font-family:inherit">✏️ Edit</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ── BY OCCASION ───────────────────────────────────────────────────────────────
+function renderOccasion(){
+  renderChips("year-chips-occasion");
+  const fe=filtered();
+  const el=document.getElementById("occasion-content");
+  const occasions=[...new Set(fe.map(e=>e.occasion))];
+  if(!occasions.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:#2dd4bf"><div style="font-size:36px;margin-bottom:10px">🎉</div>No entries yet.</div>`;return;}
+  el.innerHTML=occasions.map(occ=>{
+    const items=[...fe.filter(e=>e.occasion===occ)].reverse();
+    const oTotal=items.reduce((s,e)=>s+e.amount,0);
+    const oLarry=items.reduce((s,e)=>s+(e.larryPaid||0),0);
+    const oLiz=items.reduce((s,e)=>s+(e.lizPaid||0),0);
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:15px;font-weight:700">🎁 ${occ}</span>
+        <span style="font-size:15px;font-weight:700;font-family:monospace;color:${ORANGE}">${fmt(oTotal)}</span>
+      </div>
+      <div style="font-size:12px;color:#2dd4bf;margin-bottom:10px">
+        <span style="color:${LARRY}">${fmt(oLarry)}</span> · <span style="color:${LIZ}">${fmt(oLiz)}</span>
+      </div>
+      ${items.map(e=>`
+        <div class="entry">
+          <div class="e-left">
+            <div class="e-item">${e.item}${e.location?" 📍 "+e.location:""}</div>
+            <div class="e-meta">${e.year} · <span style="color:${LARRY}">${fmt(e.larryPaid||0)}</span> / <span style="color:${LIZ}">${fmt(e.lizPaid||0)}</span> · ${e.larryPct??50}%/${100-(e.larryPct??50)}%${e.notes?` · <span style="color:#2dd4bf">${e.notes}</span>`:""}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:15px;font-weight:700;font-family:monospace;color:${ORANGE}">${fmt(e.amount)}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>`;
+  }).join("");
+}
+
+// ── EDIT ──────────────────────────────────────────────────────────────────────
+function openEdit(id){
+  const e=entries.find(x=>x.id===id);
+  if(!e)return;
+  editingId=id;
+  document.getElementById("e-date").value=e.date||"";
+  document.getElementById("e-occasion").value=e.occasion||"";
+  document.getElementById("e-item").value=e.item||"";
+  document.getElementById("e-location").value=e.location||"";
+  document.getElementById("e-larry-paid").value=e.larryPaid||0;
+  document.getElementById("e-liz-paid").value=e.lizPaid||0;
+  document.getElementById("e-larry-pct").value=e.larryPct??50;
+  document.getElementById("e-notes").value=e.notes||"";
+  document.getElementById("edit-modal").style.display="block";
+  document.body.style.overflow="hidden";
+}
+
+function closeEdit(){
+  document.getElementById("edit-modal").style.display="none";
+  document.body.style.overflow="";
+  editingId=null;
+}
+
+function saveEdit(){
+  if(!editingId)return;
+  const idx=entries.findIndex(x=>x.id===editingId);
+  if(idx===-1)return;
+  const lp=parseFloat(document.getElementById("e-larry-paid").value)||0;
+  const lz=parseFloat(document.getElementById("e-liz-paid").value)||0;
+  const total=lp+lz;
+  const pct=parseInt(document.getElementById("e-larry-pct").value)||50;
+  const larryNet=lp-total*(pct/100);
+  const eDate=document.getElementById("e-date").value;
+  entries[idx]={...entries[idx],
+    date:eDate,
+    year:new Date(eDate).getFullYear(),
+    occasion:document.getElementById("e-occasion").value,
+    item:document.getElementById("e-item").value,
+    location:document.getElementById("e-location").value,
+    notes:document.getElementById("e-notes").value,
+    larryPaid:lp,lizPaid:lz,amount:total,larryPct:pct,larryNet
+  };
+  save();showToast("✓ Updated");closeEdit();renderAll();
+}
+
+function deleteEntry(){
+  if(!editingId)return;
+  if(!confirm("Delete this entry?"))return;
+  entries=entries.filter(x=>x.id!==editingId);
+  save();showToast("Deleted");closeEdit();renderAll();
+}
+
+// ── LEDGER ────────────────────────────────────────────────────────────────────
+function renderLedger(){
+  renderChips("year-chips-ledger");
+  const fe=[...filtered()].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const el=document.getElementById("ledger-content");
+
+  if(!fe.length){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:#2dd4bf"><div style="font-size:36px;margin-bottom:10px">📒</div>No entries yet.</div>`;
+    return;
+  }
+
+  let runningNet=0;
+
+  const rows=fe.map(e=>{
+    const lp=e.larryPaid||0;
+    const lz=e.lizPaid||0;
+    const total=lp+lz;
+    const pct=e.larryPct??50;
+    const larryShouldPay=total*(pct/100);
+    const lizShouldPay=total*(1-pct/100);
+    const entryNet=lp-larryShouldPay; // positive = Larry ahead
+    runningNet+=entryNet;
+
+    const netColor=entryNet>0?"#58a6ff":entryNet<0?"#bc8cff":"#2dd4bf";
+    const runColor=runningNet>0?"#58a6ff":runningNet<0?"#bc8cff":"#2dd4bf";
+    const netLabel=entryNet>0?`+${fmt(entryNet)}`:entryNet<0?`-${fmt(Math.abs(entryNet))}`:"Even";
+    const runLabel=runningNet>0?`+${fmt(runningNet)}`:runningNet<0?`-${fmt(Math.abs(runningNet))}`:"Even";
+
+    return`<tr>
+      <td>${e.date}</td>
+      <td>${e.occasion}</td>
+      <td style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis">${e.item}${e.location?" 📍"+e.location:""}</td>
+      <td style="font-family:monospace;text-align:right">${fmt(total)}</td>
+      <td style="font-family:monospace;text-align:right;color:#58a6ff">${fmt(lp)}</td>
+      <td style="font-family:monospace;text-align:right;color:#bc8cff">${fmt(lz)}</td>
+      <td style="text-align:center;white-space:nowrap">${pct}% / ${100-pct}%</td>
+      <td style="font-family:monospace;text-align:right;white-space:nowrap;color:${netColor};font-weight:700">${netLabel}</td>
+      <td style="font-family:monospace;text-align:right;white-space:nowrap;color:${runColor};font-weight:700" class="running-ahead">${runLabel}</td>
+    </tr>`;
+  }).join("");
+
+  // Totals row
+  const totalLarry=fe.reduce((s,e)=>s+(e.larryPaid||0),0);
+  const totalLiz=fe.reduce((s,e)=>s+(e.lizPaid||0),0);
+  const grandTotal=totalLarry+totalLiz;
+  const finalColor=runningNet>0?"#58a6ff":runningNet<0?"#bc8cff":"#2dd4bf";
+  const finalLabel=runningNet>0?`Larry is ${fmt(runningNet)} ahead`:runningNet<0?`Liz is ${fmt(Math.abs(runningNet))} ahead`:"Perfectly even";
+
+  el.innerHTML=`
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Occasion</th>
+            <th>Item</th>
+            <th style="text-align:right">Total</th>
+            <th style="text-align:right;color:#58a6ff">Blue Paid</th>
+            <th style="text-align:right;color:#bc8cff">Purple Paid</th>
+            <th style="text-align:center">Split</th>
+            <th style="text-align:right">This Entry</th>
+            <th style="text-align:right">Running Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr class="ledger-total">
+            <td colspan="3">TOTAL</td>
+            <td style="font-family:monospace;text-align:right">${fmt(grandTotal)}</td>
+            <td style="font-family:monospace;text-align:right;color:#58a6ff">${fmt(totalLarry)}</td>
+            <td style="font-family:monospace;text-align:right;color:#bc8cff">${fmt(totalLiz)}</td>
+            <td colspan="2"></td>
+            <td style="font-family:monospace;text-align:right;color:${finalColor}">${finalLabel}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="margin-top:12px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 14px;font-size:13px;color:#2dd4bf">
+      <strong style="color:#58a6ff">How to read:</strong> This Entry shows who paid more than expected on that specific item based on the agreed split. Running Total is the cumulative position across all entries — positive means Larry is ahead, negative means Liz is ahead.
+    </div>
+  `;
+}
+function showPage(id,tab){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("page-"+id).classList.add("active");
+  if(tab)tab.classList.add("active");
+  renderAll();
+}
+
+function renderAll(){
+  renderSummary();
+  renderEntries();
+  renderOccasion();
+  renderLedger();
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.opacity="1";
+  setTimeout(()=>t.style.opacity="0",2500);
+}
+</script>
+</body>
+</html>
